@@ -2,6 +2,8 @@
 
 A FastAPI HTTP server with MCP wrapper for fetching real-time and historical stock market data from Polygon.io that you can run locally and test with curl, plus seamless integration with Claude Desktop.
 
+This server provides a wrapper interface for the [Polygon.io REST API](https://polygon.io/docs/rest/) using the official [Polygon.io Python client](https://github.com/polygon-io/client-python), making stock market data easily accessible through both HTTP endpoints and Claude Desktop's MCP protocol.
+
 ## Requirements
 
 - Python >=3.13.3 (developed on Python 3.13.3)
