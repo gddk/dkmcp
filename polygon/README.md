@@ -12,7 +12,7 @@ A FastAPI HTTP server with MCP wrapper for fetching real-time and historical sto
 This server uses a **dual-interface design**:
 
 1. **HTTP Server** (`server.py`) - FastAPI server on localhost:3000 for direct testing with curl
-2. **MCP Server** (`mcp_direct.py`) - Model Context Protocol server that bridges to the HTTP server for Claude Desktop integration
+2. **MCP Wrapper** (`mcp_wrapper.py`) - Model Context Protocol wrapper that bridges to the HTTP server for Claude Desktop integration
 
 ## Setup
 
@@ -146,7 +146,7 @@ The `list_aggs` endpoint returns JSON like this:
      "mcpServers": {
        "polygon": {
          "command": "/Users/dave/mcp/polygon/venv-poly/bin/python",
-         "args": ["/Users/dave/mcp/polygon/mcp_direct.py"],
+         "args": ["/Users/dave/mcp/polygon/mcp_wrapper.py"],
          "cwd": "/Users/dave/mcp/polygon"
        }
      }
@@ -182,7 +182,7 @@ The HTTP server runs with auto-reload enabled by default, so changes to the code
 ### Debugging in VS Code
 
 To debug with breakpoints in VS Code:
-1. Set breakpoints in `server.py` or `mcp_direct.py`
+1. Set breakpoints in `server.py` or `mcp_wrapper.py`
 2. Create a launch configuration in `.vscode/launch.json`:
 ```json
 {
@@ -215,7 +215,7 @@ python3 test_server.py
 ```
 polygon/
 ├── server.py              # FastAPI HTTP server
-├── mcp_direct.py          # MCP server for Claude Desktop
+├── mcp_wrapper.py         # MCP wrapper for Claude Desktop
 ├── requirements.txt       # Python dependencies
 ├── setup.sh              # Quick setup script
 ├── test_server.py        # Test utilities
