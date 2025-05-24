@@ -1,11 +1,18 @@
-# Polygon.io HTTP API Server
+# Polygon.io HTTP API Server with MCP Integration
 
-A FastAPI HTTP server for fetching stock market data from Polygon.io that you can run locally and test with curl.
+A FastAPI HTTP server with MCP wrapper for fetching real-time and historical stock market data from Polygon.io that you can run locally and test with curl, plus seamless integration with Claude Desktop.
 
 ## Requirements
 
 - Python >=3.13.3 (developed on Python 3.13.3)
 - Polygon.io API key
+
+## Architecture
+
+This server uses a **dual-interface design**:
+
+1. **HTTP Server** (`server.py`) - FastAPI server on localhost:3000 for direct testing with curl
+2. **MCP Server** (`mcp_direct.py`) - Model Context Protocol server that bridges to the HTTP server for Claude Desktop integration
 
 ## Setup
 
@@ -62,7 +69,7 @@ INFO:     Uvicorn running on http://localhost:3000 (Press CTRL+C to quit)
 
 ### API Parameters for /v1/list_aggs
 
-- `ticker` (required): Stock ticker symbol (e.g., "AAPL")
+- `ticker` (required): Stock ticker symbol (e.g., "GDDY")
 - `multiplier` (optional): Size of the timespan multiplier (default: 1)
 - `timespan` (optional): Size of the time window (default: "minute")
 - `from` (optional): Start date in YYYY-MM-DD format (default: "2023-01-01")
@@ -73,14 +80,14 @@ INFO:     Uvicorn running on http://localhost:3000 (Press CTRL+C to quit)
 ### Example Usage with curl
 
 ```bash
-# Basic request for AAPL data
-curl "http://localhost:3000/v1/list_aggs?ticker=AAPL"
+# Basic request for GDDY data
+curl "http://localhost:3000/v1/list_aggs?ticker=GDDY"
 
-# Custom date range and timespan
-curl "http://localhost:3000/v1/list_aggs?ticker=AAPL&from=2024-01-01&to=2024-01-31&timespan=hour"
+# Custom date range and daily timespan for GoDaddy
+curl "http://localhost:3000/v1/list_aggs?ticker=GDDY&from=2025-05-21&to=2025-05-23&timespan=day"
 
-# Daily data for Tesla
-curl "http://localhost:3000/v1/list_aggs?ticker=TSLA&timespan=day&from=2024-01-01&to=2024-12-31"
+# Hourly data for GoDaddy over recent period
+curl "http://localhost:3000/v1/list_aggs?ticker=GDDY&from=2025-05-21&to=2025-05-23&timespan=hour"
 
 # Health check
 curl "http://localhost:3000/health"
@@ -100,30 +107,67 @@ Once the server is running, you can view interactive API documentation at:
 The `list_aggs` endpoint returns JSON like this:
 ```json
 {
-  "ticker": "AAPL",
-  "timespan": "1 minute",
-  "from_date": "2023-01-01",
-  "to_date": "2023-06-13",
-  "count": 50000,
+  "ticker": "GDDY",
+  "timespan": "1 day",
+  "from_date": "2025-05-21",
+  "to_date": "2025-05-23",
+  "count": 3,
   "aggregates": [
     {
-      "timestamp": 1672531800000,
-      "open": 130.28,
-      "high": 130.90,
-      "low": 130.15,
-      "close": 130.73,
-      "volume": 30000,
-      "vwap": 130.52,
-      "transactions": 250
+      "timestamp": 1747800000000,
+      "open": 186.74,
+      "high": 187.41,
+      "low": 182.26,
+      "close": 183.49,
+      "volume": 1539700,
+      "vwap": 183.6263,
+      "transactions": 33018
     }
-  ],
-  "note": "Showing first 100 of 50000 total aggregates"
+  ]
 }
 ```
 
+## Claude Desktop Integration
+
+### Setup
+
+1. **Ensure both servers are running:**
+   ```bash
+   # Terminal 1: HTTP Server
+   cd /Users/dave/mcp/polygon
+   source venv-poly/bin/activate
+   export POLYGON_API_KEY="your_key"
+   python3 server.py
+   ```
+
+2. **Add to your `claude_desktop_config.json`:**
+   ```json
+   {
+     "mcpServers": {
+       "polygon": {
+         "command": "/Users/dave/mcp/polygon/venv-poly/bin/python",
+         "args": ["/Users/dave/mcp/polygon/mcp_direct.py"],
+         "cwd": "/Users/dave/mcp/polygon"
+       }
+     }
+   }
+   ```
+
+3. **Restart Claude Desktop** to load the MCP server
+
+### Using with Claude Desktop
+
+Once configured, you can ask Claude to fetch stock data like:
+
+- "Get me daily data for GoDaddy (GDDY) from May 21 to May 23, 2025"
+- "Show me hourly price data for GDDY over the past few days"
+- "Fetch the latest trading data for GoDaddy stock"
+
+Claude will use the `list_aggs` tool to fetch real-time data from Polygon.io via your local server.
+
 ## Development
 
-This server is currently in development and implements basic aggregate data fetching functionality. Future enhancements may include:
+This server implements basic aggregate data fetching functionality. Future enhancements may include:
 
 - Additional Polygon.io API endpoints (tickers, trades, quotes, etc.)
 - Real-time data streaming
@@ -133,12 +177,12 @@ This server is currently in development and implements basic aggregate data fetc
 
 ### Development Mode
 
-The server runs with auto-reload enabled by default, so changes to the code will automatically restart the server.
+The HTTP server runs with auto-reload enabled by default, so changes to the code will automatically restart the server.
 
 ### Debugging in VS Code
 
 To debug with breakpoints in VS Code:
-1. Set breakpoints in `server.py`
+1. Set breakpoints in `server.py` or `mcp_direct.py`
 2. Create a launch configuration in `.vscode/launch.json`:
 ```json
 {
@@ -159,6 +203,26 @@ To debug with breakpoints in VS Code:
 ```
 3. Press F5 to start debugging
 
+### Testing
+
+Use the included test script to verify everything works:
+```bash
+python3 test_server.py
+```
+
+## File Structure
+
+```
+polygon/
+├── server.py              # FastAPI HTTP server
+├── mcp_direct.py          # MCP server for Claude Desktop
+├── requirements.txt       # Python dependencies
+├── setup.sh              # Quick setup script
+├── test_server.py        # Test utilities
+├── README.md             # This file
+└── .gitignore           # Git ignore patterns
+```
+
 ## Troubleshooting
 
 - Ensure your Polygon.io API key is valid and has the necessary permissions
@@ -166,3 +230,16 @@ To debug with breakpoints in VS Code:
 - Verify that you're using Python >=3.13.3
 - If you get port conflicts, change the port: `export POLY_MCP_PORT=3001`
 - Check the server logs for detailed error messages
+- For Claude Desktop issues, check MCP logs in `~/Library/Logs/Claude/mcp-server-polygon.log`
+
+## Architecture Benefits
+
+The dual-interface design provides:
+
+1. **Direct HTTP Testing** - Test with curl, Postman, or any HTTP client
+2. **Claude Desktop Integration** - Seamless access through MCP protocol
+3. **Development Flexibility** - Debug HTTP server independently
+4. **Production Ready** - Proper error handling, logging, and documentation
+5. **Extensible** - Easy to add new Polygon.io endpoints
+
+This pattern can be replicated for other API integrations requiring both direct access and Claude Desktop integration.
